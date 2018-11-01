@@ -1,0 +1,239 @@
+<?php 
+ob_start();
+include('session.php');
+
+/*if(!isset($login_session)){
+mysqli_close($link); // Closing Connection
+header('Location: index.php'); // Redirecting To Login Page
+}
+else*/
+{}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>NetSpec - Home</title>
+<link href="stylesheet.css" rel="stylesheet" type="text/css">
+ <link rel="icon" type="image/ico" href="images/favicon.ico" sizes="16x16">
+
+<script language="javascript" src="src/tablefilter.js"></script>
+<script type='text/javascript' src="src/jquery-1.11.3.min.js"></script>
+<script type='text/javascript' src="src/jquery-ui.js"></script>
+<script type='text/javascript' src="src/update_function1.js"></script>
+<script>
+  $(function() {
+    $( ".datepicker" ).datepicker({ dateFormat: 'dd.mm.yy', firstDay: 1, changeYear: true, maxDate: new Date }).val();
+  });
+  </script>
+</head>
+
+<body onload="attachFilter(document.getElementById('tabulka'), 0,'0,2,3,4,5,6,7,8,9,11')">
+<?php
+///HEADER
+$active_link1 = 'active_link';
+$pageName = 'Newest';
+include('banner.php');
+?>
+<div class="vypis" style="padding-top:25px;">
+<form action="page.php" method="GET" style="margin-left: 5px;width:500px;">
+ <b>Change assign date:</b>
+  <input class="datepicker" name="change_date" value="<?php echo $_REQUEST['change_date'] ?>" onchange="this.form.submit();">
+  <input type="submit" style="visibility: hidden; position: absolute;" />
+  <button value="<?php echo date('d.m.Y') ?>" name="change_date">Today</button>
+</form>
+<?php
+$date = $_REQUEST['change_date'];
+if(isset($date))
+{
+
+		if ($date == '' || $date == NULL)
+		{$changeddate = date('Y-m-d');
+			 }
+		else {
+		$changeddate = date('Y-m-d',strtotime($date));
+		}
+}
+?>
+
+<?php
+$link = mysqli_connect('localhost','root','NSaCadmin759','checklist');
+
+if (!$link) {
+die('<p style="color:black;font-size:32px;text-align:center;">Connection to the database not successful.</p> ' . mysqli_error());
+}
+if (!isset($changeddate))
+{
+	$today = date('Y-m-d');
+	}
+else 
+{
+	$today = $changeddate;
+}
+$retval = mysqli_query($link,'SELECT * FROM data WHERE assign_time="'. $today . '" ORDER BY wiw ASC;');
+echo '<table class="tabulka" border="1px" style="margin-top:7px;">';
+echo '<th>Type</th>
+	  <th>TC #</th>
+	  <th>Task # </th>
+	  <th> Project # </th>
+	  <th> Production Line</th>
+	  <th>Location</th>
+	  <th>Customer</th>
+	  <th>VLAN</th>
+	  <th>WiW</th>
+	  <th>Prio.</th>
+	  <th>Status</th>
+	  <th>Assign Date</th>
+	  <th>Pass Date</th>
+	  <th>Comment</th>
+	  <th>Duration</th>';
+///EDIT COLUMN
+include('session.php');
+if($row['rights'] == 1 || $row['rights'] == 0 || $row['rights'] == 3){
+       echo ("
+	  <th>Edit</th>
+	  </table>");
+	  }
+elseif($row['rights'] == 2){
+	echo '</table>';	
+}
+
+echo '<table id="tabulka" class="tabulka" border="1px">';
+while($data = mysqli_fetch_array($retval))
+{
+$count2 = $count2 + 1;
+$datum1 = date('d.m.Y',strtotime($data['assign_time']));
+
+if ($data['pass_time'] == '1970-01-01' || $data['pass_time'] == NULL || $data['pass_time'] == 00-00-0000)
+{$datum2 = "";}
+else
+$datum2 = date('d.m.Y',strtotime($data['pass_time']));
+
+if ($data['vlan'] == '0' || $data['vlan'] == NULL)
+{$vlan = "-";}
+else
+$vlan = $data['vlan'];
+
+	 if ($data['type'] == "Project" && $data['status'] == "Completed") 
+		 $trClass = 'project_completed';
+	else if ($data['type'] == "CHT" && $data['status'] == "Completed") 
+		 $trClass = 'cht_completed';
+	else if ($data['type'] == "CHT" || $data['type'] == "Project") 
+	 	 $trClass = 'cht_project';
+		 
+	 	 else if (($data['type'] == 'TCv1' || $data['type'] == 'TCv2') && ($data['status'] == "In Progress" || $data['status'] == "Assigned") && $data['duration'] > 5) 
+         $trClass = 'in_progress_critical';
+	 else if ($data['status'] == "In Progress") 
+         $trClass = 'in_progress';	 
+     else if ($data['status'] == "Canceled")  
+         $trClass = 'canceled'; 
+     else if ($data['status'] == "Completed") 
+         $trClass = 'completed';
+	 else if ($data['status'] == "On Hold") 
+	 	 $trClass = 'On_Hold';
+	 else if ($data['status'] == "Assigned") 
+	 	 $trClass = 'assigned';	
+
+		 
+		 
+if ($data['comment'] == '' || $data['comment'] == NULL)
+{$shortcut = "";}
+else
+$shortcut = "ellipsis";
+
+if ($data['request_type'] == '' || $data['request_type'] == NULL || $data['request_type'] == '0' || $data['request_type'] == '-')
+{$request_type = "";}
+else
+{$request_type = '('. $data['request_type'] . ')';}
+
+if($data['priority'] == '' || $data['priority'] == '0' || $data['priority'] == '-')
+{
+	$priority_show = '-';
+	$priority_css = '';
+}
+if($data['priority'] == '1')
+{
+	$priority_show = '1';
+	$priority_css = 'priority-one';
+}
+if($data['priority'] == '2')
+{
+	$priority_show = '2';
+	$priority_css = 'priority-two';
+}
+if($data['priority'] == '3')
+{
+	$priority_show = '3';
+	$priority_css = 'priority-three';
+}
+
+		switch($data['status']){
+				case "Assigned":$status2 = "In Progress"; $style = "display:block;";break;
+				case "In Progress":$status2 = "Completed"; $style = "display:block;";break;
+				case "Completed":$status2 = ""; $style = "display:none"; break;
+				case "Canceled":$status2 = ""; $style = "display:none"; break;
+				default: $status="";
+				}
+		  	  
+echo '<tr class="riadok' . $data['ID'] . '" id="' . $trClass . '">';
+echo '<td style="font-weight:bold">'. $data['type'] . ' '. $request_type .'</td>';
+
+if ($data['type'] == 'TCv1')
+{
+echo '<td><a href="https://websso.t-systems.com/technical-specification/cfafk/fk/specDetail.do?tab=coreData&specificationId=' . $data['tc_number'] . '" style="margin-left:0px;color: inherit" target="_blank">' . $data['tc_number'] . '</a></td>';
+}
+else
+{
+echo	'<td>' . $data['tc_number'] . '</td>';
+	}
+
+echo '	
+<td>' . $data['task_number'] . '</td>
+<td>' . $data['project_number'] . '</td>
+<td>' . $data['production_line'] . '</td>
+<td>' . $data['location'] . '</td>
+<td>' . $data['customer'] . '</td>
+<td>' . $vlan . '</td>
+<td style="font-weight:bold">' . $data['wiw'] . '</td>
+<td class="'. $priority_css .'">' . $priority_show . '</td>
+<td><div class="refresh' . $data['ID'] . '">' .$data['status'] . '</div>';?>
+
+<?php
+include('session.php');
+if($row['rights'] == 1 || $row['rights'] == 0){?>
+<a href="#a" class="changestatus<?php  echo  $data['ID'];?>" onClick='update_function(<?php echo $data['ID'] ?>)' style='<?php echo $style ?>' ><?php echo $status2; ?></a>
+<?php
+}
+elseif($row['rights'] == 2 || $row['rights'] == 3)
+{
+}?>
+
+<?php echo '</td>
+
+<td>' . $datum1 . '</td>
+<td><div class="pass_time'. $data['ID']. '">' . $datum2 . '</div></td>
+<td class="' . $shortcut . '">' . $data['comment'] . '</td>
+<td><div class="duration' . $data['ID'] . '">' . $data['duration'] . '</div></td>';
+
+include('session.php');
+if($row['rights'] == 1 || $row['rights'] == 0 || $row['rights'] == 3){
+echo ("<td><a href=\"edit_data.php?id=$data[ID]&&go_back=1&&changeddate_go_back=$changeddate\" class='edit_a'><img src='images/edit-icon.png'></a></td></tr>");
+	   echo '</tr>';}
+	   
+elseif($row['rights'] == 2){
+	echo '</tr>';	
+}
+}
+echo '</table>';
+if ($count2 >= 1)
+echo '<p class="count1">Records added today = ' . $count2 . '.</p>';
+elseif (
+	$count2 == ''
+	)
+echo '<p style="color:black;font-size:32px;text-align:center;font-weight:bold;">No records added today.</p>';
+?>
+<input type="button" onClick="self.location='excel_export.php?table=newest&changeddate=<?php echo $changeddate ?>'" value="Export to Excel" class="button1_test" >
+</div>
+</body>
+</html>
