@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html class="html" lang="sk-SK">
  <head>
+     
   
  <link href="css/new_style.css" rel="stylesheet" type="text/css">
 <div id="fb-root"></div>
